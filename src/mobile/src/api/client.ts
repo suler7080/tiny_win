@@ -54,7 +54,8 @@ export const apiClient = {
     try {
       response = await fetch(url, config);
     } catch (netErr: any) {
-      const err: any = new Error('Không thể kết nối đến máy chủ Backend. Vui lòng kiểm tra kết nối mạng.');
+      console.warn('[API Network Error]', url, netErr);
+      const err: any = new Error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng hoặc thử lại.');
       err.isNetworkError = true;
       throw err;
     }

@@ -23,10 +23,33 @@ export const AuthScreen: React.FC = () => {
   const { login, register, isLoading, error, clearError } = useAuthStore();
 
   const handleSubmit = async () => {
-    try {
-      if (isRegister) {
-        const timezone =
-          Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Ho_Chi_Minh';
+    // Client-side validation
+    if (!email.trim()) {
+      useAuthStore.setState({ error: 'Vui lòng nhập địa chỉ email của bạn.' });
+      return;
+    }
+    if (!password) {
+      useAuthStore.setState({ error: 'Vui lòng nhập mật khẩu.' });
+      return;
+    }
+
+    if (isRegister) {
+      if (!username.trim()) {
+        useAuthStore.setState({ error: 'Vui lòng nhập tên người dùng (Username).' });
+        return;
+      }
+      if (username.trim().length < 3) {
+        useAuthStore.setState({ error: 'Tên người dùng phải có ít nhất 3 ký tự.' });
+        return;
+      }
+      if (password.length < 8) {
+        useAuthStore.setState({ error: 'Mật khẩu phải có tối thiểu 8 ký tự.' });
+        return;
+      }
+      
+      const timezone =
+        Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Ho_Chi_Minh';
+      try {
         await register({
           email: email.trim(),
           password,
@@ -34,14 +57,18 @@ export const AuthScreen: React.FC = () => {
           display_name: displayName.trim() || undefined,
           timezone,
         });
-      } else {
+      } catch (e) {
+        // Handled in store
+      }
+    } else {
+      try {
         await login({
           email: email.trim(),
           password,
         });
+      } catch (e) {
+        // Handled in store
       }
-    } catch (e) {
-      // Handled in store
     }
   };
 
@@ -117,7 +144,10 @@ export const AuthScreen: React.FC = () => {
                   placeholder="hoanganh_dev"
                   placeholderTextColor={colors.textMuted}
                   value={username}
-                  onChangeText={setUsername}
+                  onChangeText={(text) => {
+                    clearError();
+                    setUsername(text);
+                  }}
                   autoCapitalize="none"
                 />
               </View>
@@ -129,7 +159,10 @@ export const AuthScreen: React.FC = () => {
                   placeholder="Hoàng Anh"
                   placeholderTextColor={colors.textMuted}
                   value={displayName}
-                  onChangeText={setDisplayName}
+                  onChangeText={(text) => {
+                    clearError();
+                    setDisplayName(text);
+                  }}
                 />
               </View>
             </>
@@ -142,7 +175,10 @@ export const AuthScreen: React.FC = () => {
               placeholder="ban@example.com"
               placeholderTextColor={colors.textMuted}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                clearError();
+                setEmail(text);
+              }}
               keyboardType="email-address"
               autoCapitalize="none"
             />
@@ -155,7 +191,10 @@ export const AuthScreen: React.FC = () => {
               placeholder="Tối thiểu 8 ký tự"
               placeholderTextColor={colors.textMuted}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text) => {
+                clearError();
+                setPassword(text);
+              }}
               secureTextEntry
             />
           </View>
