@@ -6,13 +6,21 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
+from .database import Base, engine
+from . import models  # Register all models for metadata creation
 from .redis import close_redis, init_redis
 from .routers import auth, feed, reactions, streaks, wins
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup: connect Redis. Shutdown: disconnect Redis."""
+    """Startup: auto-create database tables and connect Redis. Shutdown: disconnect Redis."""
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as e:
+        print(f"Warning: Auto-migration error: {e}")
+    
     await init_redis()
     yield
     await close_redis()
