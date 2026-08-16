@@ -8,7 +8,9 @@ interface AuthState {
   user: UserProfile | null;
   accessToken: string | null;
   refreshToken: string | null;
-  isLoading: boolean;
+  isInitializing: boolean;
+  isSubmitting: boolean;
+  isLoading: boolean; // Alias for compatibility
   error: string | null;
 
   initAuth: () => Promise<void>;
@@ -22,12 +24,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   accessToken: null,
   refreshToken: null,
+  isInitializing: true,
+  isSubmitting: false,
   isLoading: true,
   error: null,
 
   initAuth: async () => {
     try {
-      set({ isLoading: true, error: null });
+      set({ isInitializing: true, isLoading: true, error: null });
       const accessToken = await appStorage.getItem('access_token');
       const refreshToken = await appStorage.getItem('refresh_token');
       const userStr = await appStorage.getItem('user_profile');
@@ -37,20 +41,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           accessToken,
           refreshToken,
           user: JSON.parse(userStr),
+          isInitializing: false,
           isLoading: false,
         });
       } else {
-        set({ isLoading: false });
+        set({ isInitializing: false, isLoading: false });
       }
     } catch (e) {
       console.warn('initAuth error:', e);
-      set({ isLoading: false });
+      set({ isInitializing: false, isLoading: false });
     }
   },
 
   login: async (payload) => {
     try {
-      set({ isLoading: true, error: null });
+      set({ isSubmitting: true, error: null });
       const data = await authApi.login(payload);
       await appStorage.setItem('access_token', data.access_token);
       await appStorage.setItem('refresh_token', data.refresh_token);
@@ -60,18 +65,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         user: data.user,
         accessToken: data.access_token,
         refreshToken: data.refresh_token,
-        isLoading: false,
+        isSubmitting: false,
       });
     } catch (err: any) {
       const msg = extractErrorMessage(err);
-      set({ error: msg, isLoading: false });
+      set({ error: msg, isSubmitting: false });
       throw new Error(msg);
     }
   },
 
   register: async (payload) => {
     try {
-      set({ isLoading: true, error: null });
+      set({ isSubmitting: true, error: null });
       const data = await authApi.register(payload);
       await appStorage.setItem('access_token', data.access_token);
       await appStorage.setItem('refresh_token', data.refresh_token);
@@ -81,11 +86,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         user: data.user,
         accessToken: data.access_token,
         refreshToken: data.refresh_token,
-        isLoading: false,
+        isSubmitting: false,
       });
     } catch (err: any) {
       const msg = extractErrorMessage(err);
-      set({ error: msg, isLoading: false });
+      set({ error: msg, isSubmitting: false });
       throw new Error(msg);
     }
   },

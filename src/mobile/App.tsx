@@ -18,14 +18,14 @@ import { ProfileScreen } from './src/screens/ProfileScreen';
 type Tab = 'home' | 'feed' | 'profile';
 
 export default function App() {
-  const { user, isLoading, initAuth } = useAuthStore();
+  const { user, isInitializing, initAuth } = useAuthStore();
   const [currentTab, setCurrentTab] = useState<Tab>('home');
 
   useEffect(() => {
     initAuth();
   }, []);
 
-  if (isLoading) {
+  if (isInitializing) {
     return (
       <SafeAreaProvider>
         <View style={styles.loadingContainer}>

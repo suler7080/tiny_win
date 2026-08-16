@@ -20,7 +20,7 @@ export const AuthScreen: React.FC = () => {
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
 
-  const { login, register, isLoading, error, clearError } = useAuthStore();
+  const { login, register, isSubmitting, error, clearError } = useAuthStore();
 
   const handleSubmit = async () => {
     // Client-side validation
@@ -202,10 +202,10 @@ export const AuthScreen: React.FC = () => {
           <TouchableOpacity
             style={styles.submitButton}
             onPress={handleSubmit}
-            disabled={isLoading}
+            disabled={isSubmitting}
             activeOpacity={0.85}
           >
-            {isLoading ? (
+            {isSubmitting ? (
               <ActivityIndicator color="#000" />
             ) : (
               <Text style={styles.submitButtonText}>
