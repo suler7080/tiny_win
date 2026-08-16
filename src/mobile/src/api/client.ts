@@ -54,7 +54,7 @@ export const apiClient = {
     try {
       response = await fetch(url, config);
     } catch (netErr: any) {
-      const err: any = new Error('Không thể kết nối đến máy chủ Backend (Port 8080).');
+      const err: any = new Error('Không thể kết nối đến máy chủ Backend. Vui lòng kiểm tra kết nối mạng.');
       err.isNetworkError = true;
       throw err;
     }
