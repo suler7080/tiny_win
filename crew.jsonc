@@ -1,0 +1,67 @@
+{
+  // Display name for this crew
+  "name": "tiny_win_crew",
+
+  // All 5 Agents
+  "agents": [
+    "senior_product_manager",
+    "system_architect",
+    "backend_developer",
+    "mobile_developer",
+    "qa_engineer"
+  ],
+
+  // Tasks configured for Phases 3, 4 & 5
+  "tasks": [
+    {
+      "name": "task_phase3_advanced_spec",
+      "description": "Dựa trên kế hoạch phát triển (tini_win_plan.md), soạn thảo tài liệu đặc tả chi tiết cho Giai đoạn 3: 1) Đặc tả yêu cầu cho Home Screen Widget trên iOS (SwiftUI/WidgetKit) và Android (Jetpack Glance), 2) Luồng thông báo đẩy Firebase Push Notifications (nhắc nhở lúc 20:00 hằng ngày và thông báo khi bạn bè đăng bài / thả reaction), 3) Cơ chế kết nối bạn bè qua Mã QR / Deep Link, 4) Tính năng tạo và xuất ảnh Weekly Summary Card.",
+      "expected_output": "Tài liệu đặc tả chi tiết Giai đoạn 3 dạng markdown hoàn chỉnh.",
+      "output_file": "docs/phase3_advanced_spec.md",
+      "agent": "senior_product_manager"
+    },
+    {
+      "name": "task_phase3_backend_services",
+      "description": "Soạn thảo hướng dẫn thiết kế và mã nguồn mẫu cho Backend API nâng cao: 1) Cấu hình Firebase Admin SDK gửi thông báo FCM, 2) Endpoint Widget sync GET /v1/widget/today, 3) Router quản lý bạn bè /v1/friends (tạo mã QR token), 4) API xuất dữ liệu Weekly Summary Card.",
+      "expected_output": "Tài liệu kỹ thuật và mã mẫu Backend Giai đoạn 3 dạng markdown hoàn chỉnh.",
+      "output_file": "docs/phase3_backend_notes.md",
+      "agent": "backend_developer"
+    },
+    {
+      "name": "task_phase3_mobile_widgets_and_features",
+      "description": "Soạn thảo tài liệu và mã nguồn hướng dẫn chi tiết cho Mobile Client: 1) Mã nguồn Widget iOS (SwiftUI/WidgetKit) và Android (Jetpack Glance), 2) Code tích hợp Firebase Messaging listener, 3) Giao diện Quét mã QR kết bạn và xuất Weekly Summary Card.",
+      "expected_output": "Tài liệu kỹ thuật và mã mẫu Mobile Giai đoạn 3 dạng markdown hoàn chỉnh.",
+      "output_file": "docs/phase3_mobile_widgets.md",
+      "agent": "mobile_developer"
+    },
+    {
+      "name": "task_phase4_qa_e2e_and_security",
+      "description": "Xây dựng toàn bộ kế hoạch và mã kiểm thử cho Giai đoạn 4: 1) Bộ kiểm thử tích hợp tự động (Integration & Security Tests) kiểm tra các lỗ hổng Rate Limiting, Idempotency replay, Timezone boundary drift, và xác thực phân quyền API, 2) Tài liệu hướng dẫn và Checklist chạy thử nghiệm Closed Beta (50-100 người dùng).",
+      "expected_output": "Checklist và kịch bản Closed Beta cùng test cases chi tiết dạng markdown.",
+      "output_file": "docs/closed_beta_checklist.md",
+      "agent": "qa_engineer"
+    },
+    {
+      "name": "task_phase5_release_and_aso",
+      "description": "Chuẩn bị toàn bộ gói tài nguyên phát hành Giai đoạn 5: 1) Gói tài nguyên ASO (Tên App, Phụ đề, Mô tả ngắn, Mô tả chi tiết, Danh sách từ khóa ASO tiếng Việt & tiếng Anh, Hướng dẫn thiết kế Screenshots & App Icon), 2) Bản Chính sách Quyền riêng tư (Privacy Policy) và hướng dẫn triển khai tính năng Xóa tài khoản bắt buộc theo tiêu chuẩn Apple/Google, 3) Cấu hình CI/CD GitHub Actions Workflow.",
+      "expected_output": "Gói tài nguyên phát hành ASO và Privacy Policy dạng markdown hoàn chỉnh.",
+      "output_file": "docs/aso_release_pack.md",
+      "agent": "system_architect"
+    }
+  ],
+
+  // Execution process
+  "process": "sequential",
+
+  // Enable verbose logging during execution
+  "verbose": true,
+
+  // Enable crew memory
+  "memory": false,
+
+  // Automatically plan the execution strategy before running tasks
+  "planning": false,
+
+  // Optional runtime input defaults
+  "inputs": {}
+}

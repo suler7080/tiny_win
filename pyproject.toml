@@ -1,0 +1,32 @@
+[project]
+name = "tiny_win_crew"
+version = "0.1.0"
+description = "tiny_win_crew using crewAI"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "asyncpg>=0.31.0",
+    "bcrypt>=5.0.0",
+    "crewai[anthropic,google-genai,litellm,tools]>=1.15.16,<2.0.0",
+    "email-validator>=2.3.0",
+    "fastapi>=0.115.0",
+    "httpx>=0.27.0",
+    "passlib[bcrypt]>=1.7.4",
+    "pydantic-settings>=2.3.0",
+    "pytest-asyncio>=0.23.0",
+    "python-jose[cryptography]>=3.3.0",
+    "redis>=5.0.7",
+    "sqlalchemy>=2.0.31",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+only-include = ["agents", "crew.jsonc", "tools", "knowledge", "skills"]
+
+[tool.crewai]
+type = "crew"
+definition = "crew.jsonc"
+project_id = "0bcf0aa6-8962-42c7-ace6-fe1053b6a12f"

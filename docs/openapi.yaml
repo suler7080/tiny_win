@@ -1,0 +1,1009 @@
+openapi: "3.0.3"
+
+# =============================================================================
+# Tiny Win — OpenAPI / Swagger 3.0 Specification
+# Version: MVP 1.0
+# Author:  Lead System & Database Architect
+# Base URL: https://api.tinywin.app/v1
+# =============================================================================
+
+info:
+  title: Tiny Win API
+  version: "1.0.0"
+  description: |
+    RESTful API for **Tiny Win** — the minimalist daily-win social platform.
+
+    ### Core behaviours covered by this spec
+    - **Auth** — register, login, logout, token refresh
+    - **Wins** — create today's win (1 per user per day), retrieve own win, check status
+    - **Feed** — friend feed (server-enforced lock until user has posted today)
+    - **Reactions** — add / change / remove a reaction (🔥 👀 🤝)
+    - **Streaks & Calendar** — user streak counters and win calendar
+
+    ### Design principles
+    - Server is source-of-truth for date boundaries (uses user's IANA timezone)
+    - All write endpoints require `Idempotency-Key` header to prevent double-submit
+    - Feed endpoint returns **403 FeedLocked** when user has not posted today
+    - No public like/follower counts (anti-Instagram, PRD §2.3)
+
+  contact:
+    name: Tiny Win Engineering
+    email: eng@tinywin.app
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.tinywin.app/v1
+    description: Production
+  - url: https://staging-api.tinywin.app/v1
+    description: Staging
+  - url: http://localhost:8080/v1
+    description: Local development
+
+# ---------------------------------------------------------------------------
+# Security Schemes
+# ---------------------------------------------------------------------------
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT access token obtained from `POST /auth/login` or `POST /auth/refresh`.
+        Include in header: `Authorization: Bearer <token>`
+
+  # -------------------------------------------------------------------------
+  # Reusable Parameters
+  # -------------------------------------------------------------------------
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: |
+        Client-generated UUID v4. Server stores this key and returns the cached
+        response on duplicate requests within the same calendar day.
+        Prevents double-submit (PRD §8, US-A3).
+      schema:
+        type: string
+        format: uuid
+        example: "550e8400-e29b-41d4-a716-446655440000"
+
+    WinId:
+      name: win_id
+      in: path
+      required: true
+      description: Unique identifier of the Tiny Win post.
+      schema:
+        type: string
+        format: uuid
+
+    UserId:
+      name: user_id
+      in: path
+      required: true
+      description: Unique identifier of the user.
+      schema:
+        type: string
+        format: uuid
+
+  # -------------------------------------------------------------------------
+  # Reusable Schemas
+  # -------------------------------------------------------------------------
+  schemas:
+
+    # ── Auth ────────────────────────────────────────────────────────────────
+
+    RegisterRequest:
+      type: object
+      required: [username, email, password, timezone]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 30
+          example: "hoanganh"
+        email:
+          type: string
+          format: email
+          example: "hoang@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: "S3cur3P@ss!"
+        timezone:
+          type: string
+          description: IANA timezone identifier
+          example: "Asia/Ho_Chi_Minh"
+        display_name:
+          type: string
+          maxLength: 50
+          example: "Hoàng Anh"
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: "hoang@example.com"
+        password:
+          type: string
+          format: password
+          example: "S3cur3P@ss!"
+
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: Short-lived JWT (15 min)
+          example: "eyJhbGciOiJSUzI1NiJ9..."
+        refresh_token:
+          type: string
+          description: Long-lived opaque refresh token (30 days)
+          example: "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4..."
+        token_type:
+          type: string
+          enum: [Bearer]
+        expires_in:
+          type: integer
+          description: Access token TTL in seconds
+          example: 900
+        user:
+          $ref: '#/components/schemas/UserProfile'
+
+    RefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+          example: "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4..."
+
+    # ── User ────────────────────────────────────────────────────────────────
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        username:
+          type: string
+          example: "hoanganh"
+        display_name:
+          type: string
+          example: "Hoàng Anh"
+        timezone:
+          type: string
+          example: "Asia/Ho_Chi_Minh"
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T07:00:00Z"
+
+    # ── Wins ────────────────────────────────────────────────────────────────
+
+    CreateWinRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: |
+            Win text. 1–120 Unicode grapheme clusters after trim.
+            Empty or whitespace-only content is rejected (PRD §5, Rules #3-4).
+          example: "Hoàn thành 20 phút thiền định buổi sáng 🧘"
+
+    Win:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "c3d4e5f6-a1b2-7890-abcd-ef1234567890"
+        author_id:
+          type: string
+          format: uuid
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        author_username:
+          type: string
+          example: "hoanganh"
+        author_display_name:
+          type: string
+          example: "Hoàng Anh"
+        content:
+          type: string
+          example: "Hoàn thành 20 phút thiền định buổi sáng 🧘"
+        date_key:
+          type: string
+          format: date
+          description: Calendar date in user's timezone (server-computed)
+          example: "2024-07-15"
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-07-15T07:32:00Z"
+        my_reaction:
+          $ref: '#/components/schemas/ReactionType'
+          nullable: true
+          description: The authenticated user's current reaction on this win, or null.
+
+    TodayWinStatus:
+      type: object
+      description: Tells the client whether the current user has posted today.
+      properties:
+        has_posted_today:
+          type: boolean
+          example: true
+        date_key:
+          type: string
+          format: date
+          example: "2024-07-15"
+        win:
+          $ref: '#/components/schemas/Win'
+          nullable: true
+          description: The win object if posted, null otherwise.
+
+    # ── Reactions ───────────────────────────────────────────────────────────
+
+    ReactionType:
+      type: string
+      enum: ["🔥", "👀", "🤝"]
+      description: |
+        Exactly three reaction types are supported (PRD §4.1, Rule #7):
+        - 🔥 Fire
+        - 👀 Eyes
+        - 🤝 Handshake
+
+    UpsertReactionRequest:
+      type: object
+      required: [type]
+      properties:
+        type:
+          $ref: '#/components/schemas/ReactionType'
+
+    ReactionResponse:
+      type: object
+      properties:
+        win_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/ReactionType'
+          nullable: true
+          description: Current reaction type, or null if removed.
+        updated_at:
+          type: string
+          format: date-time
+
+    # ── Feed ────────────────────────────────────────────────────────────────
+
+    FeedResponse:
+      type: object
+      properties:
+        date_key:
+          type: string
+          format: date
+          example: "2024-07-15"
+        wins:
+          type: array
+          items:
+            $ref: '#/components/schemas/Win'
+          description: Today's wins from accepted friends, ordered by created_at DESC.
+        meta:
+          type: object
+          properties:
+            total:
+              type: integer
+              description: Total wins in feed for today
+              example: 5
+            cursor:
+              type: string
+              nullable: true
+              description: Cursor for next page (null if no more results)
+              example: null
+
+    # ── Streaks & Calendar ──────────────────────────────────────────────────
+
+    StreakResponse:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        current_streak:
+          type: integer
+          description: Number of consecutive days with a win ending today or yesterday
+          example: 7
+        longest_streak:
+          type: integer
+          description: Longest ever consecutive-day streak
+          example: 14
+        total_wins:
+          type: integer
+          description: All-time total wins
+          example: 42
+        last_win_date:
+          type: string
+          format: date
+          nullable: true
+          example: "2024-07-15"
+
+    CalendarResponse:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        year:
+          type: integer
+          example: 2024
+        month:
+          type: integer
+          minimum: 1
+          maximum: 12
+          example: 7
+        days:
+          type: array
+          description: List of dates (in user timezone) when a win was posted this month.
+          items:
+            type: string
+            format: date
+          example: ["2024-07-01", "2024-07-02", "2024-07-05", "2024-07-15"]
+
+    # ── Errors ──────────────────────────────────────────────────────────────
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: Machine-readable error code
+              example: "WIN_ALREADY_EXISTS"
+            message:
+              type: string
+              description: Human-readable explanation (calm, specific language per PRD §7)
+              example: "Bạn đã đăng Tiny Win hôm nay rồi. Hẹn gặp lại ngày mai!"
+            detail:
+              type: string
+              nullable: true
+              description: Optional additional context
+              example: "date_key=2024-07-15, existing_win_id=c3d4..."
+
+  # -------------------------------------------------------------------------
+  # Reusable Responses
+  # -------------------------------------------------------------------------
+  responses:
+    Unauthorized:
+      description: Missing or invalid access token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: "UNAUTHORIZED"
+              message: "Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại."
+
+    FeedLocked:
+      description: |
+        Feed is locked because the user has not posted a Tiny Win today.
+        (PRD §4.1, US-C1, Business Rule #10)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: "FEED_LOCKED"
+              message: "Đăng Tiny Win của bạn hôm nay để mở xem bảng tin bạn bè!"
+
+    NotFound:
+      description: Requested resource not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: "NOT_FOUND"
+              message: "Không tìm thấy tài nguyên yêu cầu."
+
+    TooManyRequests:
+      description: Rate limit exceeded.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds to wait before retrying
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: "RATE_LIMIT_EXCEEDED"
+              message: "Quá nhiều yêu cầu. Vui lòng thử lại sau."
+
+    UnprocessableEntity:
+      description: Validation error — request body failed business rules.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Conflict:
+      description: Business rule conflict (e.g. win already exists today).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+# ---------------------------------------------------------------------------
+# Global Security (all endpoints require auth unless overridden)
+# ---------------------------------------------------------------------------
+security:
+  - BearerAuth: []
+
+# =============================================================================
+# PATHS
+# =============================================================================
+paths:
+
+  # ===========================================================================
+  # AUTH
+  # ===========================================================================
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user account
+      description: |
+        Creates a new Tiny Win account. Returns access & refresh tokens
+        so the client is authenticated immediately after registration.
+      security: []   # Public endpoint
+      operationId: authRegister
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              username: "hoanganh"
+              email: "hoang@example.com"
+              password: "S3cur3P@ss!"
+              timezone: "Asia/Ho_Chi_Minh"
+              display_name: "Hoàng Anh"
+      responses:
+        "201":
+          description: Account created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        "409":
+          description: Email or username already taken.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: "EMAIL_TAKEN"
+                  message: "Email đã được đăng ký. Vui lòng dùng email khác hoặc đăng nhập."
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+        "429":
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with email and password
+      description: Returns JWT access token (15 min) and refresh token (30 days).
+      security: []
+      operationId: authLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        "200":
+          description: Login successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        "401":
+          description: Invalid credentials.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: "INVALID_CREDENTIALS"
+                  message: "Email hoặc mật khẩu không đúng."
+        "429":
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      description: Exchange a valid refresh token for a new access token.
+      security: []
+      operationId: authRefresh
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        "200":
+          description: New access token issued.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout — revoke refresh token
+      description: |
+        Invalidates the refresh token server-side (added to revocation list / Redis blocklist).
+        Access token expires naturally (TTL 15 min).
+      operationId: authLogout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        "204":
+          description: Logged out successfully. No content returned.
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+  # ===========================================================================
+  # WINS
+  # ===========================================================================
+
+  /wins:
+    post:
+      tags: [Wins]
+      summary: Create today's Tiny Win
+      description: |
+        Posts the authenticated user's Tiny Win for today.
+
+        **Business rules enforced server-side:**
+        - 1 win per user per calendar day (user's IANA timezone, PRD §5 Rule #2)
+        - Content: 1–120 grapheme clusters after trim (PRD §5 Rules #3-5)
+        - Idempotency: duplicate `Idempotency-Key` returns the existing win (HTTP 200)
+        - On success, the user's feed is unlocked for the rest of the day
+
+        **Concurrent duplicate protection:** UNIQUE constraint on `(author_id, date_key)`
+        combined with `Idempotency-Key` header prevents double-submit.
+      operationId: createWin
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWinRequest'
+            example:
+              content: "Uống đủ 2L nước hôm nay 💧"
+      responses:
+        "201":
+          description: Win created successfully. Feed is now unlocked.
+          headers:
+            Location:
+              description: URL of the newly created win
+              schema:
+                type: string
+                example: "/v1/wins/c3d4e5f6-a1b2-7890-abcd-ef1234567890"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Win'
+        "200":
+          description: |
+            Idempotent response — this `Idempotency-Key` was already used today.
+            Returns the existing win without creating a duplicate. (PRD US-A3, US-A4)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Win'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "409":
+          description: |
+            User has already posted a Tiny Win today under a **different** idempotency key.
+            (PRD §5 Rule #2)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: "WIN_ALREADY_EXISTS"
+                  message: "Bạn đã đăng Tiny Win hôm nay rồi. Hẹn gặp lại ngày mai!"
+                  detail: "date_key=2024-07-15"
+        "422":
+          description: Content validation failed (blank, too long, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: "CONTENT_INVALID"
+                  message: "Nội dung phải có từ 1 đến 120 ký tự và không chỉ gồm khoảng trắng."
+        "429":
+          $ref: '#/components/responses/TooManyRequests'
+
+  /wins/today:
+    get:
+      tags: [Wins]
+      summary: Get today's win status for the current user
+      description: |
+        Returns whether the current user has posted today and, if so, the win object.
+        Used by the home screen to show/hide the post CTA (US-A1).
+        Cached in Redis per user (TTL until end of day in user timezone).
+      operationId: getTodayWinStatus
+      responses:
+        "200":
+          description: Today's win status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodayWinStatus'
+              examples:
+                posted:
+                  summary: User has posted today
+                  value:
+                    has_posted_today: true
+                    date_key: "2024-07-15"
+                    win:
+                      id: "c3d4e5f6-a1b2-7890-abcd-ef1234567890"
+                      author_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                      content: "Uống đủ 2L nước hôm nay 💧"
+                      date_key: "2024-07-15"
+                      created_at: "2024-07-15T07:32:00Z"
+                      my_reaction: null
+                not_posted:
+                  summary: User has not posted today
+                  value:
+                    has_posted_today: false
+                    date_key: "2024-07-15"
+                    win: null
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+  /wins/{win_id}:
+    get:
+      tags: [Wins]
+      summary: Get a specific win by ID
+      description: |
+        Returns a win post. The requesting user must be the author or
+        an accepted friend of the author (RLS enforced at DB layer).
+      operationId: getWin
+      parameters:
+        - $ref: '#/components/parameters/WinId'
+      responses:
+        "200":
+          description: Win found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Win'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          description: Not authorized to view this win (not an accepted friend).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: "FORBIDDEN"
+                  message: "Bạn không có quyền xem bài viết này."
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  # ===========================================================================
+  # FEED
+  # ===========================================================================
+
+  /feed:
+    get:
+      tags: [Feed]
+      summary: Get friend feed for today
+      description: |
+        Returns today's Tiny Wins from accepted friends, ordered by `created_at DESC`.
+
+        **Feed Lock (PRD §4.1, US-C1, Business Rule #10):**
+        If the authenticated user has NOT posted a win today, this endpoint
+        returns **HTTP 403 with code `FEED_LOCKED`** — no win content is leaked.
+        This check is enforced server-side regardless of client state.
+
+        **Pagination:** cursor-based via `cursor` query parameter.
+
+        **Cache:** Results are cached in Redis per user (TTL 60 s).
+        Cache is invalidated on new win post or new reaction from a friend.
+      operationId: getFeed
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          description: Opaque cursor for pagination (value from previous response `meta.cursor`)
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          description: Max number of wins to return (default 20, max 50)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        "200":
+          description: Feed loaded successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedResponse'
+              example:
+                date_key: "2024-07-15"
+                wins:
+                  - id: "win-uuid-001"
+                    author_id: "user-uuid-002"
+                    author_username: "minhthu"
+                    author_display_name: "Minh Thư"
+                    content: "Đọc xong chương 5 của cuốn sách mình đã trì hoãn 3 tuần 📖"
+                    date_key: "2024-07-15"
+                    created_at: "2024-07-15T08:15:00Z"
+                    my_reaction: "🔥"
+                meta:
+                  total: 1
+                  cursor: null
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/FeedLocked'
+        "429":
+          $ref: '#/components/responses/TooManyRequests'
+
+  # ===========================================================================
+  # REACTIONS
+  # ===========================================================================
+
+  /wins/{win_id}/reaction:
+    put:
+      tags: [Reactions]
+      summary: Add or change reaction on a win
+      description: |
+        Upserts the authenticated user's reaction on a specific win.
+
+        **Rules (PRD §4.1, Business Rules #7-8):**
+        - Only 3 reaction types: 🔥, 👀, 🤝
+        - One reaction per user per win (UPSERT semantics — new type replaces old)
+        - User cannot react to their own win (403)
+        - Win author must be an accepted friend
+
+        **Optimistic UI:** Client may update UI immediately and rollback on error.
+        Server is source-of-truth; client must not show success before server confirms.
+      operationId: upsertReaction
+      parameters:
+        - $ref: '#/components/parameters/WinId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertReactionRequest'
+            example:
+              type: "🔥"
+      responses:
+        "200":
+          description: Reaction added or updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReactionResponse'
+              example:
+                win_id: "win-uuid-001"
+                user_id: "user-uuid-me"
+                type: "🔥"
+                updated_at: "2024-07-15T09:00:00Z"
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          description: Cannot react to own win, or author is not an accepted friend.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: "REACTION_FORBIDDEN"
+                  message: "Bạn không thể reaction bài của chính mình."
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "422":
+          description: Invalid reaction type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: "INVALID_REACTION_TYPE"
+                  message: "Chỉ chấp nhận ba loại reaction: 🔥, 👀, 🤝."
+
+    delete:
+      tags: [Reactions]
+      summary: Remove reaction from a win
+      description: |
+        Removes the authenticated user's reaction from the specified win.
+        Corresponds to "tap the same reaction again to toggle it off" (PRD §4.1, US-B3, Rule #9).
+        Idempotent — deleting a non-existent reaction returns 204.
+      operationId: deleteReaction
+      parameters:
+        - $ref: '#/components/parameters/WinId'
+      responses:
+        "204":
+          description: Reaction removed (or did not exist). No content returned.
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  # ===========================================================================
+  # STREAKS & CALENDAR
+  # ===========================================================================
+
+  /users/{user_id}/streaks:
+    get:
+      tags: [Streaks & Calendar]
+      summary: Get streak data for a user
+      description: |
+        Returns current streak, longest streak and total win count.
+
+        **Access rules:**
+        - Any authenticated user can view their own streaks
+        - Accepted friends can view each other's streaks
+        - Streak counts are **not** publicly displayed in MVP UI (PRD §4.2)
+
+        **Cache:** Cached in Redis per user (TTL 5 min). Invalidated on new win.
+      operationId: getUserStreaks
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        "200":
+          description: Streak data returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StreakResponse'
+              example:
+                user_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                current_streak: 7
+                longest_streak: 14
+                total_wins: 42
+                last_win_date: "2024-07-15"
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          description: Not authorized (not the user themselves or accepted friend).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /users/{user_id}/calendar:
+    get:
+      tags: [Streaks & Calendar]
+      summary: Get win calendar for a user (month view)
+      description: |
+        Returns the list of dates in a given month when the user posted a Tiny Win.
+        Used to render a calendar heatmap view.
+
+        Dates are expressed in the **user's own timezone** (consistent with `date_key`).
+        If `year` / `month` are omitted, returns the current calendar month.
+
+        **Access rules:** Same as streaks — self or accepted friend only.
+        **Cache:** Cached in Redis per (user, year, month) (TTL 10 min).
+      operationId: getUserCalendar
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 2024
+            example: 2024
+        - name: month
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+            example: 7
+      responses:
+        "200":
+          description: Calendar data returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarResponse'
+              example:
+                user_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                year: 2024
+                month: 7
+                days: ["2024-07-01", "2024-07-02", "2024-07-05", "2024-07-15"]
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          description: Not authorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "422":
+          description: Invalid year or month value.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+# ===========================================================================
+# Tags (for documentation grouping)
+# ===========================================================================
+tags:
+  - name: Auth
+    description: Registration, login, token management
+  - name: Wins
+    description: Create and retrieve Tiny Win posts
+  - name: Feed
+    description: Friend feed (locked until user posts today)
+  - name: Reactions
+    description: React to friends' wins (🔥 👀 🤝)
+  - name: Streaks & Calendar
+    description: Streak counters and monthly win calendar

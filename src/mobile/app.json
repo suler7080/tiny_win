@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Tiny Win",
+    "slug": "tiny-win",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#09090B"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.tinywin.app"
+    },
+    "android": {
+      "package": "com.tinywin.app",
+      "versionCode": 1,
+      "usesCleartextTraffic": true,
+      "adaptiveIcon": {
+        "backgroundColor": "#09090B"
+      },
+      "permissions": [
+        "INTERNET"
+      ]
+    },
+    "plugins": []
+  }
+}
