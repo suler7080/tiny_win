@@ -1,12 +1,8 @@
 import { appStorage } from '../utils/storage';
 import { Platform } from 'react-native';
 
-// IP Wi-Fi hiện tại của máy tính để điện thoại kết nối được tới Backend Docker qua mạng LAN.
-export const DEV_LAN_IP = '192.168.0.150';
-export const API_BASE_URL =
-  Platform.OS === 'web'
-    ? 'http://localhost:8080/v1'
-    : `http://${DEV_LAN_IP}:8080/v1`;
+// Public Production Backend API trên Railway (kết nối toàn cầu qua 4G, 5G và mọi mạng Wi-Fi)
+export const API_BASE_URL = 'https://tinywin-production.up.railway.app/v1';
 
 interface RequestOptions {
   headers?: Record<string, string>;
