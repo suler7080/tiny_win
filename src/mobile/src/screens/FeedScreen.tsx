@@ -68,7 +68,7 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onGoToPost }) => {
       <Header
         title="Bảng tin Bạn bè"
         subtitle="Những chiến thắng nhỏ tích cực hôm nay ✨"
-        badge={feedWins.length > 0 ? `${feedWins.length} tin` : undefined}
+        badge={feedWins.length > 0 ? `${feedWins.length} tin mới` : undefined}
         rightElement={
           <TouchableOpacity
             onPress={() => setFriendModalVisible(true)}
@@ -97,7 +97,7 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onGoToPost }) => {
             <TouchableOpacity
               style={styles.addFriendActionBtn}
               onPress={() => setFriendModalVisible(true)}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
             >
               <Text style={styles.addFriendActionText}>✨ Kết nối bạn bè ngay</Text>
             </TouchableOpacity>
@@ -119,6 +119,7 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onGoToPost }) => {
               refreshing={isLoadingFeed}
               onRefresh={fetchFeed}
               tintColor={colors.accent}
+              colors={[colors.accent]}
             />
           }
         />
@@ -177,21 +178,21 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
-    borderRadius: radius.md,
+    borderRadius: radius.full,
     ...shadows.glowGreen,
   },
   addFriendActionText: {
     ...typography.bodyBold,
-    color: colors.textInverse,
-    fontWeight: '700',
+    color: '#09090B',
+    fontWeight: '800',
   },
   friendBtn: {
     backgroundColor: colors.surfaceHighlight,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.xs + 2,
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: colors.borderSubtle,
+    borderColor: colors.borderGlow,
   },
   friendBtnText: {
     ...typography.captionBold,
@@ -199,4 +200,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 });
+
 

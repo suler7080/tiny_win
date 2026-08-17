@@ -10,6 +10,22 @@ interface WinCardProps {
   showReaction?: boolean;
 }
 
+const formatRelativeTime = (isoString?: string): string => {
+  if (!isoString) return '';
+  try {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffSeconds < 60) return 'vừa xong';
+    if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)} phút trước`;
+    if (diffSeconds < 86400) return `${Math.floor(diffSeconds / 3600)} giờ trước`;
+    return `${date.getDate()}/${date.getMonth() + 1}`;
+  } catch {
+    return '';
+  }
+};
+
 export const WinCard: React.FC<WinCardProps> = ({
   win,
   onReact,
@@ -17,6 +33,7 @@ export const WinCard: React.FC<WinCardProps> = ({
 }) => {
   const authorName = win.author_display_name || win.author_username;
   const initial = authorName.charAt(0).toUpperCase();
+  const timeAgo = formatRelativeTime(win.created_at);
 
   return (
     <View style={styles.card}>
@@ -26,12 +43,15 @@ export const WinCard: React.FC<WinCardProps> = ({
         </View>
         <View style={styles.authorInfo}>
           <View style={styles.nameRow}>
-            <Text style={typography.heading}>{authorName}</Text>
+            <Text style={[typography.heading, styles.authorName]}>{authorName}</Text>
+            {timeAgo ? <Text style={styles.timestampText}>{timeAgo}</Text> : null}
+          </View>
+          <View style={styles.subRow}>
+            <Text style={typography.caption}>@{win.author_username}</Text>
             <View style={styles.dailyBadge}>
               <Text style={styles.dailyBadgeText}>Daily Win ✨</Text>
             </View>
           </View>
-          <Text style={typography.caption}>@{win.author_username}</Text>
         </View>
       </View>
 
@@ -67,8 +87,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   avatar: {
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
     borderRadius: radius.full,
     backgroundColor: colors.surfaceElevated,
     alignItems: 'center',
@@ -76,11 +96,12 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
     borderWidth: 1.5,
     borderColor: colors.accent,
+    ...shadows.subtle,
   },
   avatarText: {
     color: colors.accentLight,
-    fontWeight: '700',
-    fontSize: 16,
+    fontWeight: '800',
+    fontSize: 17,
   },
   authorInfo: {
     flex: 1,
@@ -90,6 +111,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 2,
+  },
+  authorName: {
+    flex: 1,
+    marginRight: spacing.xs,
+  },
+  timestampText: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  subRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   dailyBadge: {
     backgroundColor: colors.accentMuted,
@@ -128,3 +163,4 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
 });
+

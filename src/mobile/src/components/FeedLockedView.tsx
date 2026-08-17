@@ -11,13 +11,26 @@ export const FeedLockedView: React.FC<FeedLockedViewProps> = ({ onGoToPost }) =>
     <View style={styles.container}>
       {/* Background teaser placeholders */}
       <View style={styles.teaserBackground} pointerEvents="none">
-        <View style={[styles.ghostCard, { opacity: 0.25 }]}>
-          <View style={styles.ghostAvatar} />
+        <View style={[styles.ghostCard, { opacity: 0.28 }]}>
+          <View style={styles.ghostHeader}>
+            <View style={styles.ghostAvatar} />
+            <View style={styles.ghostTitleLine} />
+          </View>
           <View style={styles.ghostLine} />
         </View>
-        <View style={[styles.ghostCard, { opacity: 0.15 }]}>
-          <View style={styles.ghostAvatar} />
-          <View style={styles.ghostLine} />
+        <View style={[styles.ghostCard, { opacity: 0.18 }]}>
+          <View style={styles.ghostHeader}>
+            <View style={styles.ghostAvatar} />
+            <View style={styles.ghostTitleLine} />
+          </View>
+          <View style={[styles.ghostLine, { width: '65%' }]} />
+        </View>
+        <View style={[styles.ghostCard, { opacity: 0.08 }]}>
+          <View style={styles.ghostHeader}>
+            <View style={styles.ghostAvatar} />
+            <View style={styles.ghostTitleLine} />
+          </View>
+          <View style={[styles.ghostLine, { width: '50%' }]} />
         </View>
       </View>
 
@@ -59,7 +72,7 @@ const styles = StyleSheet.create({
   },
   teaserBackground: {
     position: 'absolute',
-    top: spacing.xl,
+    top: spacing.md,
     left: spacing.lg,
     right: spacing.lg,
     gap: spacing.md,
@@ -71,12 +84,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  ghostHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
   ghostAvatar: {
     width: 32,
     height: 32,
     borderRadius: radius.full,
     backgroundColor: colors.surfaceHighlight,
-    marginBottom: spacing.sm,
+    marginRight: spacing.sm,
+  },
+  ghostTitleLine: {
+    height: 12,
+    width: '40%',
+    borderRadius: radius.xs,
+    backgroundColor: colors.surfaceHighlight,
   },
   ghostLine: {
     height: 14,
@@ -96,8 +120,8 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   iconCircle: {
-    width: 64,
-    height: 64,
+    width: 68,
+    height: 68,
     borderRadius: radius.full,
     backgroundColor: colors.surfaceElevated,
     alignItems: 'center',
@@ -108,7 +132,7 @@ const styles = StyleSheet.create({
     ...shadows.glowGold,
   },
   icon: {
-    fontSize: 28,
+    fontSize: 30,
   },
   title: {
     marginBottom: spacing.sm,
@@ -145,8 +169,9 @@ const styles = StyleSheet.create({
     ...shadows.glowGreen,
   },
   buttonText: {
-    color: '#000',
+    color: '#09090B',
     fontWeight: '800',
     fontSize: 15,
   },
 });
+

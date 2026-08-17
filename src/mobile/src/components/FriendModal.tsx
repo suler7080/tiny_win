@@ -437,35 +437,39 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   closeBtn: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
     borderRadius: radius.full,
     backgroundColor: colors.surfaceHighlight,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
   },
   closeBtnText: {
-    color: colors.textSecondary,
-    fontSize: 14,
+    color: colors.textPrimary,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   tabBar: {
     flexDirection: 'row',
     backgroundColor: colors.surface,
     borderRadius: radius.md,
-    padding: 3,
+    padding: 4,
     marginBottom: spacing.lg,
     borderWidth: 1,
     borderColor: colors.borderSubtle,
   },
   tabItem: {
     flex: 1,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.sm + 2,
     alignItems: 'center',
     borderRadius: radius.sm,
   },
   tabItemActive: {
     backgroundColor: colors.surfaceHighlight,
+    borderWidth: 1,
+    borderColor: colors.borderGlow,
   },
   tabText: {
     ...typography.caption,
@@ -474,6 +478,7 @@ const styles = StyleSheet.create({
   },
   tabTextActive: {
     color: colors.textPrimary,
+    fontWeight: '700',
   },
   centerLoading: {
     paddingVertical: spacing.xxl,
@@ -495,6 +500,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     marginBottom: spacing.md,
     width: '100%',
+    ...shadows.subtle,
   },
   qrImageWrapper: {
     width: 190,
@@ -553,7 +559,7 @@ const styles = StyleSheet.create({
   actionBtnPrimary: {
     flex: 1,
     backgroundColor: colors.accent,
-    borderRadius: radius.md,
+    borderRadius: radius.full,
     paddingVertical: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
@@ -564,13 +570,13 @@ const styles = StyleSheet.create({
   },
   actionBtnPrimaryText: {
     ...typography.bodyBold,
-    color: colors.textInverse,
-    fontWeight: '700',
+    color: '#09090B',
+    fontWeight: '800',
   },
   actionBtnSecondary: {
     flex: 1,
     backgroundColor: colors.surfaceHighlight,
-    borderRadius: radius.md,
+    borderRadius: radius.full,
     paddingVertical: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
@@ -580,7 +586,7 @@ const styles = StyleSheet.create({
   actionBtnSecondaryText: {
     ...typography.bodyBold,
     color: colors.textPrimary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   refreshLinkBtn: {
     marginTop: spacing.md,

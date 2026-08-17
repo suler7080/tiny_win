@@ -99,7 +99,7 @@ export default function App() {
               onPress={() => setCurrentTab('profile')}
               activeOpacity={0.8}
             >
-              <Text style={styles.navEmoji}>👤</Text>
+              <Text style={styles.navEmoji}>📊</Text>
               <Text
                 style={[
                   styles.navLabel,
@@ -134,41 +134,43 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgApp,
     borderTopWidth: 1,
     borderTopColor: colors.borderSubtle,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
   },
   bottomNav: {
     flexDirection: 'row',
     backgroundColor: colors.surface,
     borderRadius: radius.full,
-    padding: spacing.xs,
+    padding: 4,
     borderWidth: 1,
     borderColor: colors.border,
-    ...shadows.subtle,
+    ...shadows.card,
   },
   navItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.xs + 2,
+    paddingVertical: spacing.xs + 3,
     borderRadius: radius.full,
   },
   navItemActive: {
     backgroundColor: colors.surfaceElevated,
     borderWidth: 1,
     borderColor: colors.borderGlow,
+    ...shadows.glowGreen,
   },
   navEmoji: {
-    fontSize: 18,
+    fontSize: 20,
     marginBottom: 2,
   },
   navLabel: {
     ...typography.micro,
     color: colors.textSecondary,
-    fontSize: 11,
+    fontSize: 12,
   },
   navLabelActive: {
     color: colors.accentLight,
     fontWeight: '700',
   },
 });
+

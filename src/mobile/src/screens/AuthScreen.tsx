@@ -17,10 +17,14 @@ export const AuthScreen: React.FC = () => {
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
 
   const { login, register, isSubmitting, error, clearError } = useAuthStore();
+
+  const detectedTimezone =
+    Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Ho_Chi_Minh';
 
   const handleSubmit = async () => {
     // Client-side validation
@@ -47,15 +51,13 @@ export const AuthScreen: React.FC = () => {
         return;
       }
       
-      const timezone =
-        Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Ho_Chi_Minh';
       try {
         await register({
           email: email.trim(),
           password,
           username: username.trim(),
           display_name: displayName.trim() || undefined,
-          timezone,
+          timezone: detectedTimezone,
         });
       } catch (e) {
         // Handled in store
@@ -82,16 +84,21 @@ export const AuthScreen: React.FC = () => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         {/* Brand Header */}
         <View style={styles.header}>
           <View style={styles.logoBadge}>
-            <Text style={styles.logoEmoji}>✨</Text>
+            <Text style={styles.logoEmoji}>🌱</Text>
           </View>
           <Text style={[typography.hero, styles.title]}>Tiny Win</Text>
           <Text style={[typography.body, styles.subtitle]}>
-            Mỗi ngày 1 chiến thắng nhỏ — Nuôi dưỡng thói quen lớn.
+            Flex nhỏ thôi — nhưng thật ✨
           </Text>
+
+          {/* Social Proof Pill */}
+          <View style={styles.socialProofPill}>
+            <Text style={styles.socialProofText}>🔥 1,234+ người đang duy trì streak</Text>
+          </View>
         </View>
 
         {/* Auth Card */}
@@ -131,6 +138,7 @@ export const AuthScreen: React.FC = () => {
 
           {error && (
             <View style={styles.errorBox}>
+              <Text style={styles.errorIcon}>⚠️</Text>
               <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
@@ -139,65 +147,93 @@ export const AuthScreen: React.FC = () => {
             <>
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Tên tài khoản (Username)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="hoanganh_dev"
-                  placeholderTextColor={colors.textMuted}
-                  value={username}
-                  onChangeText={(text) => {
-                    clearError();
-                    setUsername(text);
-                  }}
-                  autoCapitalize="none"
-                />
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputPrefixIcon}>👤</Text>
+                  <TextInput
+                    style={styles.inputWithIcon}
+                    placeholder="hoanganh_dev"
+                    placeholderTextColor={colors.textMuted}
+                    value={username}
+                    onChangeText={(text) => {
+                      clearError();
+                      setUsername(text);
+                    }}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                </View>
               </View>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Tên hiển thị (Tùy chọn)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Hoàng Anh"
-                  placeholderTextColor={colors.textMuted}
-                  value={displayName}
-                  onChangeText={(text) => {
-                    clearError();
-                    setDisplayName(text);
-                  }}
-                />
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputPrefixIcon}>✏️</Text>
+                  <TextInput
+                    style={styles.inputWithIcon}
+                    placeholder="Hoàng Anh"
+                    placeholderTextColor={colors.textMuted}
+                    value={displayName}
+                    onChangeText={(text) => {
+                      clearError();
+                      setDisplayName(text);
+                    }}
+                  />
+                </View>
               </View>
             </>
           )}
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="ban@example.com"
-              placeholderTextColor={colors.textMuted}
-              value={email}
-              onChangeText={(text) => {
-                clearError();
-                setEmail(text);
-              }}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputPrefixIcon}>📧</Text>
+              <TextInput
+                style={styles.inputWithIcon}
+                placeholder="ban@example.com"
+                placeholderTextColor={colors.textMuted}
+                value={email}
+                onChangeText={(text) => {
+                  clearError();
+                  setEmail(text);
+                }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Mật khẩu</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Tối thiểu 8 ký tự"
-              placeholderTextColor={colors.textMuted}
-              value={password}
-              onChangeText={(text) => {
-                clearError();
-                setPassword(text);
-              }}
-              secureTextEntry
-            />
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputPrefixIcon}>🔒</Text>
+              <TextInput
+                style={styles.inputWithIcon}
+                placeholder="Tối thiểu 8 ký tự"
+                placeholderTextColor={colors.textMuted}
+                value={password}
+                onChangeText={(text) => {
+                  clearError();
+                  setPassword(text);
+                }}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeBtn}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '🙈'}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
+
+          {isRegister && (
+            <View style={styles.tzBadge}>
+              <Text style={styles.tzBadgeText}>🌐 Múi giờ: {detectedTimezone} ✓</Text>
+            </View>
+          )}
 
           <TouchableOpacity
             style={styles.submitButton}
@@ -206,13 +242,20 @@ export const AuthScreen: React.FC = () => {
             activeOpacity={0.85}
           >
             {isSubmitting ? (
-              <ActivityIndicator color="#000" />
+              <ActivityIndicator color="#09090B" />
             ) : (
               <Text style={styles.submitButtonText}>
                 {isRegister ? 'Bắt đầu hành trình 🚀' : 'Đăng nhập ngay 💫'}
               </Text>
             )}
           </TouchableOpacity>
+        </View>
+
+        {/* Trust Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            ✨ Nuôi dưỡng thói quen tích cực mỗi ngày
+          </Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -228,25 +271,26 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     padding: spacing.lg,
+    paddingVertical: spacing.xxl,
   },
   header: {
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
   },
   logoBadge: {
-    width: 64,
-    height: 64,
+    width: 68,
+    height: 68,
     borderRadius: radius.xl,
     backgroundColor: colors.surfaceElevated,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.md,
-    borderWidth: 1,
+    marginBottom: spacing.sm,
+    borderWidth: 1.5,
     borderColor: colors.borderGlow,
     ...shadows.glowGreen,
   },
   logoEmoji: {
-    fontSize: 32,
+    fontSize: 34,
   },
   title: {
     marginBottom: spacing.xxs,
@@ -257,6 +301,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     maxWidth: 280,
     lineHeight: 20,
+    fontWeight: '500',
+  },
+  socialProofPill: {
+    backgroundColor: colors.streakGoldMuted,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    marginTop: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.borderGold,
+  },
+  socialProofText: {
+    color: colors.streakGoldLight,
+    fontSize: 12,
+    fontWeight: '600',
   },
   formCard: {
     backgroundColor: colors.surface,
@@ -270,19 +329,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: colors.surfaceElevated,
     borderRadius: radius.md,
-    padding: 3,
+    padding: 4,
     marginBottom: spacing.lg,
   },
   segmentBtn: {
     flex: 1,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.sm + 2,
     alignItems: 'center',
     borderRadius: radius.sm,
   },
   segmentBtnActive: {
     backgroundColor: colors.surfaceHighlight,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderGlow,
   },
   segmentText: {
     color: colors.textSecondary,
@@ -294,17 +353,24 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.dangerMuted,
     padding: spacing.md,
     borderRadius: radius.md,
     marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: colors.danger,
+    gap: spacing.xs,
+  },
+  errorIcon: {
+    fontSize: 14,
   },
   errorText: {
     color: colors.dangerLight,
     fontSize: 13,
     fontWeight: '600',
+    flex: 1,
   },
   inputGroup: {
     marginBottom: spacing.md,
@@ -314,27 +380,66 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: spacing.xs,
   },
-  input: {
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.surfaceElevated,
     borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
     paddingHorizontal: spacing.md,
+  },
+  inputPrefixIcon: {
+    fontSize: 15,
+    marginRight: spacing.sm,
+  },
+  inputWithIcon: {
+    flex: 1,
     paddingVertical: spacing.md,
     color: colors.textPrimary,
     fontSize: 15,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
+  },
+  eyeBtn: {
+    padding: spacing.xs,
+  },
+  eyeIcon: {
+    fontSize: 16,
+  },
+  tzBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.surfaceHighlight,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: spacing.xxs + 1,
+    marginBottom: spacing.sm,
+  },
+  tzBadgeText: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: '500',
   },
   submitButton: {
     backgroundColor: colors.accent,
     borderRadius: radius.full,
     paddingVertical: spacing.md + 2,
     alignItems: 'center',
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     ...shadows.glowGreen,
   },
   submitButtonText: {
-    color: '#000',
+    color: '#09090B',
     fontWeight: '800',
     fontSize: 16,
+    letterSpacing: -0.2,
+  },
+  footer: {
+    alignItems: 'center',
+    marginTop: spacing.xl,
+  },
+  footerText: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '500',
   },
 });
+

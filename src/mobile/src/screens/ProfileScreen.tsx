@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { colors, radius, spacing, typography, shadows } from '../theme/colors';
 import { Header } from '../components/Header';
@@ -44,12 +45,27 @@ export const ProfileScreen: React.FC = () => {
     }
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Đăng xuất',
+      'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        { text: 'Đăng xuất', style: 'destructive', onPress: logout },
+      ]
+    );
+  };
+
   const displayName = user?.display_name || user?.username || 'User';
 
   // Heatmap rendering logic (Day 1 to 31)
-  const currentYear = calendarData?.year || new Date().getFullYear();
-  const currentMonth = calendarData?.month || new Date().getMonth() + 1;
+  const now = new Date();
+  const currentYear = calendarData?.year || now.getFullYear();
+  const currentMonth = calendarData?.month || now.getMonth() + 1;
   const currentDaysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+  const isCurrentMonthNow =
+    now.getFullYear() === currentYear && now.getMonth() + 1 === currentMonth;
+  const todayDateNum = now.getDate();
 
   // First day of month (0 = Sunday, 1 = Monday, etc.)
   // Adjust so Monday is index 0
@@ -63,6 +79,14 @@ export const ProfileScreen: React.FC = () => {
   const completedCount = calendarData?.days.length || 0;
   const completionPercentage = Math.round((completedCount / currentDaysInMonth) * 100);
 
+  // Dynamic color for completion pill
+  const pillStyle =
+    completionPercentage >= 90
+      ? styles.pillGold
+      : completionPercentage >= 50
+      ? styles.pillEmerald
+      : styles.pillAmber;
+
   return (
     <View style={styles.container}>
       <Header
@@ -75,9 +99,9 @@ export const ProfileScreen: React.FC = () => {
               style={styles.qrHeaderBtn}
               activeOpacity={0.7}
             >
-              <Text style={styles.qrHeaderBtnText}>🎫 Mã QR</Text>
+              <Text style={styles.qrHeaderBtnText}>🎫 QR</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={logout} style={styles.logoutButton} activeOpacity={0.7}>
+            <TouchableOpacity onPress={handleLogout} style={styles.logoutButton} activeOpacity={0.7}>
               <Text style={styles.logoutText}>Đăng xuất</Text>
             </TouchableOpacity>
           </View>
@@ -96,7 +120,7 @@ export const ProfileScreen: React.FC = () => {
             <Text style={typography.title}>{displayName}</Text>
             <Text style={typography.caption}>@{user?.username}</Text>
             <View style={styles.timezoneBadge}>
-              <Text style={styles.timezoneText}>🌐 {user?.timezone || 'UTC'}</Text>
+              <Text style={styles.timezoneText}>🌐 {user?.timezone || 'Asia/Ho_Chi_Minh'}</Text>
             </View>
           </View>
           <TouchableOpacity
@@ -121,31 +145,34 @@ export const ProfileScreen: React.FC = () => {
             <View style={styles.streakGrid}>
               <View style={[styles.statBox, styles.statBoxPrimary]}>
                 <View style={styles.statIconBadge}>
-                  <Text style={{ fontSize: 18 }}>🔥</Text>
+                  <Text style={{ fontSize: 20 }}>🔥</Text>
                 </View>
-                <Text style={styles.statValue}>
-                  {streakData?.current_streak ?? 0} <Text style={styles.statUnit}>ngày</Text>
+                <Text style={[typography.stat, styles.statValueGold]}>
+                  {streakData?.current_streak ?? 0}
                 </Text>
+                <Text style={styles.statUnit}>ngày</Text>
                 <Text style={styles.statLabel}>Chuỗi hiện tại</Text>
               </View>
 
               <View style={styles.statBox}>
                 <View style={styles.statIconBadge}>
-                  <Text style={{ fontSize: 18 }}>🏆</Text>
+                  <Text style={{ fontSize: 20 }}>🏆</Text>
                 </View>
-                <Text style={styles.statValue}>
-                  {streakData?.longest_streak ?? 0} <Text style={styles.statUnit}>ngày</Text>
+                <Text style={[typography.stat, styles.statValue]}>
+                  {streakData?.longest_streak ?? 0}
                 </Text>
+                <Text style={styles.statUnit}>ngày</Text>
                 <Text style={styles.statLabel}>Kỷ lục chuỗi</Text>
               </View>
 
               <View style={styles.statBox}>
                 <View style={styles.statIconBadge}>
-                  <Text style={{ fontSize: 18 }}>🎯</Text>
+                  <Text style={{ fontSize: 20 }}>🎯</Text>
                 </View>
-                <Text style={styles.statValue}>
-                  {streakData?.total_wins ?? 0} <Text style={styles.statUnit}>win</Text>
+                <Text style={[typography.stat, styles.statValue]}>
+                  {streakData?.total_wins ?? 0}
                 </Text>
+                <Text style={styles.statUnit}>win</Text>
                 <Text style={styles.statLabel}>Tổng Tiny Win</Text>
               </View>
             </View>
@@ -161,7 +188,7 @@ export const ProfileScreen: React.FC = () => {
                     {completedCount}/{currentDaysInMonth} ngày hoàn thành
                   </Text>
                 </View>
-                <View style={styles.completionPill}>
+                <View style={[styles.completionPill, pillStyle]}>
                   <Text style={styles.completionText}>{completionPercentage}%</Text>
                 </View>
               </View>
@@ -186,18 +213,22 @@ export const ProfileScreen: React.FC = () => {
                 {Array.from({ length: currentDaysInMonth }).map((_, idx) => {
                   const dayNumber = idx + 1;
                   const hasWon = daysWonSet.has(dayNumber);
+                  const isToday = isCurrentMonthNow && dayNumber === todayDateNum;
                   return (
                     <View
                       key={dayNumber}
                       style={[
                         styles.heatmapCell,
                         hasWon && styles.heatmapCellActive,
+                        isToday && !hasWon && styles.heatmapCellToday,
+                        isToday && hasWon && styles.heatmapCellTodayActive,
                       ]}
                     >
                       <Text
                         style={[
                           styles.heatmapCellText,
                           hasWon && styles.heatmapCellTextActive,
+                          isToday && !hasWon && styles.heatmapCellTextToday,
                         ]}
                       >
                         {dayNumber}
@@ -205,6 +236,21 @@ export const ProfileScreen: React.FC = () => {
                     </View>
                   );
                 })}
+              </View>
+
+              {/* Monthly Progress Bar */}
+              <View style={styles.progressContainer}>
+                <View style={styles.progressTrack}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      { width: `${Math.min(100, Math.max(0, completionPercentage))}%` },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.progressLabel}>
+                  Đã đạt {completionPercentage}% mục tiêu tháng này ✨
+                </Text>
               </View>
             </View>
           </>
@@ -221,6 +267,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.lg,
+    paddingBottom: spacing.xxl,
   },
   logoutButton: {
     backgroundColor: colors.dangerMuted,
@@ -232,7 +279,7 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     color: colors.danger,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
   },
   userCard: {
@@ -247,13 +294,13 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   avatarLarge: {
-    width: 60,
-    height: 60,
+    width: 62,
+    height: 62,
     borderRadius: radius.full,
     backgroundColor: colors.surfaceElevated,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.lg,
+    marginRight: spacing.md,
     borderWidth: 2,
     borderColor: colors.accent,
     ...shadows.glowGreen,
@@ -300,26 +347,34 @@ const styles = StyleSheet.create({
   statBoxPrimary: {
     borderColor: colors.borderGold,
     backgroundColor: colors.surfaceElevated,
+    ...shadows.glowGold,
   },
   statIconBadge: {
-    marginBottom: 4,
+    marginBottom: 2,
   },
   statValue: {
-    fontSize: 17,
+    fontSize: 26,
     fontWeight: '800',
     color: colors.textPrimary,
-    marginBottom: 2,
+    lineHeight: 30,
+  },
+  statValueGold: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: colors.streakGoldLight,
+    lineHeight: 30,
   },
   statUnit: {
     fontSize: 11,
-    fontWeight: '500',
+    fontWeight: '600',
     color: colors.textSecondary,
+    marginBottom: 2,
   },
   statLabel: {
     fontSize: 11,
-    color: colors.textSecondary,
+    color: colors.textMuted,
     textAlign: 'center',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   calendarCard: {
     backgroundColor: colors.surface,
@@ -336,12 +391,22 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   completionPill: {
-    backgroundColor: colors.accentMuted,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: radius.full,
     borderWidth: 1,
+  },
+  pillEmerald: {
+    backgroundColor: colors.accentMuted,
     borderColor: colors.borderGlow,
+  },
+  pillGold: {
+    backgroundColor: colors.streakGoldMuted,
+    borderColor: colors.borderGold,
+  },
+  pillAmber: {
+    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+    borderColor: 'rgba(245, 158, 11, 0.3)',
   },
   completionText: {
     color: colors.accentLight,
@@ -386,22 +451,58 @@ const styles = StyleSheet.create({
     borderColor: colors.accentLight,
     ...shadows.glowGreen,
   },
+  heatmapCellToday: {
+    borderColor: colors.accentLight,
+    borderWidth: 2,
+  },
+  heatmapCellTodayActive: {
+    borderWidth: 2,
+    borderColor: '#FFF',
+  },
   heatmapCellText: {
     fontSize: 12,
     color: colors.textMuted,
     fontWeight: '600',
   },
   heatmapCellTextActive: {
-    color: '#000',
+    color: '#09090B',
     fontWeight: '800',
+  },
+  heatmapCellTextToday: {
+    color: colors.accentLight,
+    fontWeight: '800',
+  },
+  progressContainer: {
+    marginTop: spacing.lg,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderSubtle,
+  },
+  progressTrack: {
+    height: 6,
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radius.full,
+    overflow: 'hidden',
+    marginBottom: spacing.xs,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: colors.accent,
+    borderRadius: radius.full,
+  },
+  progressLabel: {
+    color: colors.textMuted,
+    fontSize: 12,
+    textAlign: 'center',
+    fontWeight: '500',
   },
   qrHeaderBtn: {
     backgroundColor: colors.surfaceHighlight,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.xs + 2,
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: colors.borderSubtle,
+    borderColor: colors.borderGlow,
   },
   qrHeaderBtnText: {
     ...typography.captionBold,
@@ -411,7 +512,7 @@ const styles = StyleSheet.create({
   friendActionBtn: {
     backgroundColor: colors.surfaceHighlight,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.xs + 2,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.borderSubtle,
@@ -422,4 +523,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 });
+
 

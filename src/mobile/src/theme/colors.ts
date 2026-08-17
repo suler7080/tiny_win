@@ -52,8 +52,23 @@ export const colors = {
   handshakeActive: '#10B981',
   handshakeBg: 'rgba(16, 185, 129, 0.16)',
 
+  // Glassmorphism & Gradients
+  surfaceGlass: 'rgba(255, 255, 255, 0.04)',
+  surfaceGlassBorder: 'rgba(255, 255, 255, 0.08)',
+  gradientStart: '#10B981',
+  gradientEnd: '#059669',
+  gradientGoldStart: '#F59E0B',
+  gradientGoldEnd: '#D97706',
+
   // Aliases for compatibility
   background: '#09090B',
+};
+
+export const motion = {
+  fast: 150,
+  normal: 250,
+  slow: 400,
+  spring: { tension: 40, friction: 7 },
 };
 
 export const typography = {
@@ -62,6 +77,12 @@ export const typography = {
     fontWeight: '800' as const,
     color: colors.textPrimary,
     letterSpacing: -0.6,
+  },
+  stat: {
+    fontSize: 28,
+    fontWeight: '800' as const,
+    color: colors.textPrimary,
+    letterSpacing: -0.8,
   },
   title: {
     fontSize: 22,
