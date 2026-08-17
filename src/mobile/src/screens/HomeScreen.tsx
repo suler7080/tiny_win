@@ -37,7 +37,11 @@ export const HomeScreen: React.FC = () => {
     }
   };
 
-  const hasPosted = todayStatus?.has_posted_today;
+  // Format today's local date YYYY-MM-DD
+  const localTodayIso = new Date().toLocaleDateString('en-CA');
+  const hasPosted = Boolean(
+    todayStatus?.has_posted_today && todayStatus?.date_key === localTodayIso
+  );
 
   // Format today's localized date
   const todayFormatted = new Date().toLocaleDateString('vi-VN', {

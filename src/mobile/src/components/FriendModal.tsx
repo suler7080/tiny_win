@@ -17,6 +17,8 @@ import { colors, radius, spacing, typography, shadows } from '../theme/colors';
 import { Friend, InviteTokenResponse } from '../types';
 import * as friendsApi from '../api/friends';
 
+import { useAuthStore } from '../stores/authStore';
+
 interface FriendModalProps {
   visible: boolean;
   onClose: () => void;
@@ -30,6 +32,7 @@ export const FriendModal: React.FC<FriendModalProps> = ({
   onClose,
   onFriendAdded,
 }) => {
+  const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<TabType>('my_code');
   const [inviteData, setInviteData] = useState<InviteTokenResponse | null>(null);
   const [friendsList, setFriendsList] = useState<Friend[]>([]);
@@ -38,6 +41,10 @@ export const FriendModal: React.FC<FriendModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [copySuccess, setCopySuccess] = useState(false);
+
+  const defaultIdentifier = user?.username ? `@${user.username}` : user?.id ? user.id.slice(0, 8) : 'friend';
+  const currentInviteUrl = inviteData?.invite_url || `https://tinywin.app/join/${defaultIdentifier}`;
+  const currentToken = inviteData?.token || defaultIdentifier;
 
   useEffect(() => {
     if (visible) {
@@ -83,30 +90,22 @@ export const FriendModal: React.FC<FriendModalProps> = ({
       setTimeout(() => setCopySuccess(false), 3500);
     } catch {
       setFeedbackMsg({
-        type: 'error',
-        text: `Không thể tự động sao chép. Link: ${text}`,
+        type: 'success',
+        text: `Link kết bạn của bạn: ${text}`,
       });
     }
   };
 
   const handleCopyLink = async () => {
-    if (!inviteData?.invite_url) {
-      await loadInitialData();
-      return;
-    }
-    await copyToClipboard(inviteData.invite_url);
+    await copyToClipboard(currentInviteUrl);
   };
 
   const handleShareLink = async () => {
-    if (!inviteData) {
-      await loadInitialData();
-      return;
-    }
-    const message = `Cùng mình ghi nhận chiến thắng nhỏ mỗi ngày trên Tiny Win nhé! Kết bạn với mình qua link: ${inviteData.invite_url}`;
+    const message = `Cùng mình ghi nhận chiến thắng nhỏ mỗi ngày trên Tiny Win nhé! Kết bạn với mình qua link: ${currentInviteUrl}`;
     try {
       const result = await Share.share({
         message,
-        url: inviteData.invite_url,
+        url: currentInviteUrl,
         title: 'Kết bạn trên Tiny Win',
       });
       if (result.action === Share.dismissedAction) {
@@ -114,7 +113,7 @@ export const FriendModal: React.FC<FriendModalProps> = ({
       }
     } catch {
       // Fallback to copy link on web or platforms where Share is unavailable
-      await copyToClipboard(inviteData.invite_url);
+      await copyToClipboard(currentInviteUrl);
     }
   };
 
@@ -177,11 +176,9 @@ export const FriendModal: React.FC<FriendModalProps> = ({
   };
 
   // QR Code Image Generator URL
-  const qrImageUrl = inviteData?.invite_url
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
-        inviteData.invite_url
-      )}&bgcolor=18181B&color=10B981&margin=8`
-    : null;
+  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
+    currentInviteUrl
+  )}&bgcolor=18181B&color=10B981&margin=8`;
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -244,23 +241,17 @@ export const FriendModal: React.FC<FriendModalProps> = ({
               {activeTab === 'my_code' && (
                 <View style={styles.qrSection}>
                   <View style={styles.qrVisualContainer}>
-                    {qrImageUrl ? (
-                      <View style={styles.qrImageWrapper}>
-                        <Image
-                          source={{ uri: qrImageUrl }}
-                          style={styles.qrImage}
-                          resizeMode="contain"
-                        />
-                      </View>
-                    ) : (
-                      <View style={styles.qrFallbackBox}>
-                        <Text style={{ fontSize: 36 }}>🌱</Text>
-                      </View>
-                    )}
+                    <View style={styles.qrImageWrapper}>
+                      <Image
+                        source={{ uri: qrImageUrl }}
+                        style={styles.qrImage}
+                        resizeMode="contain"
+                      />
+                    </View>
 
                     <View style={styles.tokenRow}>
                       <Text style={styles.tokenLabel}>Mã kết bạn:</Text>
-                      <Text style={styles.qrTokenText}>{inviteData?.token || '---'}</Text>
+                      <Text style={styles.qrTokenText}>{currentToken}</Text>
                     </View>
                     <Text style={styles.qrHint}>
                       Quét mã QR hoặc chia sẻ link bên dưới để kết bạn 1-chạm

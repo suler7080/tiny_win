@@ -70,8 +70,10 @@ async def create_win(
     # Update streak
     await update_streak_after_win(db, user.id, today)
 
-    # Invalidate caches
+    # Invalidate caches for today
+    await cache_del(f"today_status:{user.id}:{today}")
     await cache_del(f"today_status:{user.id}")
+    await cache_del(f"feed:{user.id}:{today}")
     await cache_del(f"feed:{user.id}")
 
     return _win_to_response(win, user)
@@ -81,10 +83,10 @@ async def create_win(
 async def get_today_status(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     today = user_local_date(user.timezone)
 
-    # Check cache
-    cache_key = f"today_status:{user.id}"
+    # Check cache with date-specific key
+    cache_key = f"today_status:{user.id}:{today}"
     cached = await cache_get(cache_key)
-    if cached:
+    if cached and cached.get("date_key") == str(today):
         return TodayWinStatus(**cached)
 
     result = await db.execute(select(Win).where(Win.author_id == user.id, Win.date_key == today))

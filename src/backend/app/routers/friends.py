@@ -67,18 +67,36 @@ async def connect_friend(
     target_user_id: uuid.UUID | None = None
 
     if payload.token:
-        # Extract token if full URL was pasted
+        # Extract token or username if full URL was pasted
         raw_token = payload.token.strip()
         if "/join/" in raw_token:
             raw_token = raw_token.split("/join/")[-1].strip().split("?")[0].split("/")[0]
 
-        token_data = await cache_get(f"invite:{raw_token}")
-        if not token_data:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"error": {"code": "INVALID_INVITE_TOKEN", "message": "Mã mời kết bạn không hợp lệ hoặc đã hết hạn (48h)."}},
-            )
-        target_user_id = uuid.UUID(token_data["user_id"])
+        if raw_token.startswith("@"):
+            clean_username = raw_token.lstrip("@")
+            user_query = await db.execute(select(User).where(User.username == clean_username))
+            target_user = user_query.scalar_one_or_none()
+            if not target_user:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail={"error": {"code": "USER_NOT_FOUND", "message": f"Không tìm thấy người dùng @{clean_username}."}},
+                )
+            target_user_id = target_user.id
+        else:
+            token_data = await cache_get(f"invite:{raw_token}")
+            if token_data and "user_id" in token_data:
+                target_user_id = uuid.UUID(token_data["user_id"])
+            else:
+                # Check if raw_token is actually a username
+                user_query = await db.execute(select(User).where(User.username == raw_token))
+                target_user = user_query.scalar_one_or_none()
+                if target_user:
+                    target_user_id = target_user.id
+                else:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail={"error": {"code": "INVALID_INVITE_TOKEN", "message": "Mã mời kết bạn không hợp lệ hoặc đã hết hạn (48h)."}},
+                    )
 
     elif payload.username:
         clean_username = payload.username.strip().lstrip("@")
