@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { appStorage } from '../utils/storage';
 import { UserProfile } from '../types';
 import * as authApi from '../api/auth';
-import { extractErrorMessage } from '../api/client';
+import { extractErrorMessage, setAuthExpiredHandler } from '../api/client';
 
 interface AuthState {
   user: UserProfile | null;
@@ -20,14 +20,25 @@ interface AuthState {
   clearError: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
-  accessToken: null,
-  refreshToken: null,
-  isInitializing: true,
-  isSubmitting: false,
-  isLoading: true,
-  error: null,
+export const useAuthStore = create<AuthState>((set, get) => {
+  // Register automatic logout on expired auth
+  setAuthExpiredHandler(() => {
+    set({
+      user: null,
+      accessToken: null,
+      refreshToken: null,
+      error: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
+    });
+  });
+
+  return {
+    user: null,
+    accessToken: null,
+    refreshToken: null,
+    isInitializing: true,
+    isSubmitting: false,
+    isLoading: true,
+    error: null,
 
   initAuth: async () => {
     try {
@@ -113,4 +124,5 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   clearError: () => set({ error: null }),
-}));
+  };
+});

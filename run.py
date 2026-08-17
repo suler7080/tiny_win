@@ -54,22 +54,29 @@ def main():
 
     crew, _ = load_crew(Path("crew.jsonc"))
 
-    # Explicitly configure EcoAPI endpoint for all loaded agents
+    # Configure EcoAPI endpoint with per-agent model support
     api_key = os.getenv("OPENAI_API_KEY", "sk-1be117b6df0254a5-6sjbgf-fbd7db5c")
     base_url = os.getenv("OPENAI_BASE_URL", "https://ecoapi.net/v1")
-    eco_llm = LLM(
-        model="openai/gpt-5-4",
-        base_url=base_url,
-        api_key=api_key
-    )
+    default_model = os.getenv("MODEL", "openai/claude-sonnet-4-6")
 
     for agent in crew.agents:
-        agent.llm = eco_llm
+        agent_model = getattr(agent, "llm_val", None) or (agent.llm.model if hasattr(agent.llm, "model") else None) or default_model
+        if isinstance(agent_model, str):
+            agent.llm = LLM(
+                model=agent_model,
+                base_url=base_url,
+                api_key=api_key
+            )
+            print(f"[*] Agent '{agent.role}' -> LLM: {agent_model}")
 
     pending_tasks = []
     for task in crew.tasks:
-        if task.agent:
-            task.agent.llm = eco_llm
+        if task.agent and not isinstance(task.agent.llm, LLM):
+            task.agent.llm = LLM(
+                model=default_model,
+                base_url=base_url,
+                api_key=api_key
+            )
 
         if task.name == "task_phase3_advanced_spec" and checkpoints["phase3_advanced"]:
             print(f">> Skip '{task.name}' (Already in docs/phase3_advanced_spec.md)")

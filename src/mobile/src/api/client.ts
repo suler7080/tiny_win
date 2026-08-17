@@ -9,6 +9,12 @@ interface RequestOptions {
   params?: Record<string, any>;
 }
 
+let onAuthExpiredCallback: (() => void) | null = null;
+
+export function setAuthExpiredHandler(handler: () => void) {
+  onAuthExpiredCallback = handler;
+}
+
 // Lightweight, 100% native HTTP client (Hermes-compatible, zero private property issues)
 export const apiClient = {
   async request<T>(method: string, endpoint: string, data?: any, options?: RequestOptions): Promise<{ data: T }> {
@@ -60,7 +66,55 @@ export const apiClient = {
       throw err;
     }
 
-    const responseData = await response.json().catch(() => null);
+    let responseData = await response.json().catch(() => null);
+
+    // Auto token refresh on 401 for authenticated endpoints
+    if (
+      response.status === 401 &&
+      !endpoint.includes('/auth/login') &&
+      !endpoint.includes('/auth/register') &&
+      !endpoint.includes('/auth/refresh')
+    ) {
+      try {
+        const refreshToken = await appStorage.getItem('refresh_token');
+        if (refreshToken) {
+          const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: refreshToken }),
+          });
+
+          if (refreshRes.ok) {
+            const refreshData = await refreshRes.json();
+            if (refreshData?.access_token) {
+              await appStorage.setItem('access_token', refreshData.access_token);
+              if (refreshData.refresh_token) {
+                await appStorage.setItem('refresh_token', refreshData.refresh_token);
+              }
+              if (refreshData.user) {
+                await appStorage.setItem('user_profile', JSON.stringify(refreshData.user));
+              }
+
+              // Retry original request with new access token
+              headers['Authorization'] = `Bearer ${refreshData.access_token}`;
+              const retryResponse = await fetch(url, { ...config, headers });
+              if (retryResponse.ok) {
+                const retryData = await retryResponse.json().catch(() => null);
+                return { data: retryData as T };
+              }
+            }
+          }
+        }
+      } catch (refreshErr) {
+        console.warn('Auto refresh token failed:', refreshErr);
+      }
+
+      // If refresh failed, clear stale credentials to prevent loop
+      await appStorage.multiRemove(['access_token', 'refresh_token', 'user_profile']).catch(() => {});
+      if (onAuthExpiredCallback) {
+        onAuthExpiredCallback();
+      }
+    }
 
     if (!response.ok) {
       let errorMessage = `HTTP Error ${response.status}`;
@@ -73,7 +127,7 @@ export const apiClient = {
       } else if (Array.isArray(responseData?.detail) && responseData.detail[0]?.msg) {
         errorMessage = responseData.detail[0].msg;
       } else if (response.status === 401) {
-        errorMessage = 'Email hoặc mật khẩu không chính xác.';
+        errorMessage = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
       } else if (response.status === 403) {
         errorMessage = 'Bảng tin bị khóa. Bạn cần đăng Tiny Win hôm nay để mở!';
       } else if (response.status === 409) {

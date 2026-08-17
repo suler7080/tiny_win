@@ -138,3 +138,39 @@ class ErrorDetail(BaseModel):
 
 class ErrorResponse(BaseModel):
     error: ErrorDetail
+
+
+# ── Friends & QR/Invite ──────────────────────────────────────────────────────
+
+
+class InviteTokenResponse(BaseModel):
+    token: str
+    invite_url: str
+    expires_in_seconds: int
+    user_id: uuid.UUID
+    username: str
+
+
+class ConnectFriendRequest(BaseModel):
+    token: str | None = None
+    username: str | None = None
+
+
+class FriendUser(BaseModel):
+    id: uuid.UUID
+    username: str
+    display_name: str | None = None
+    current_streak: int = 0
+
+
+class FriendResponse(BaseModel):
+    friendship_id: uuid.UUID
+    friend: FriendUser
+    status: str
+    created_at: datetime
+
+
+class FriendListResponse(BaseModel):
+    friends: list[FriendResponse]
+    total: int
+

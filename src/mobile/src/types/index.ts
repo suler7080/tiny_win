@@ -75,3 +75,31 @@ export interface ApiError {
     detail?: string | null;
   };
 }
+
+export interface InviteTokenResponse {
+  token: string;
+  invite_url: string;
+  expires_in_seconds: number;
+  user_id: string;
+  username: string;
+}
+
+export interface FriendUser {
+  id: string;
+  username: string;
+  display_name?: string | null;
+  current_streak: number;
+}
+
+export interface Friend {
+  friendship_id: string;
+  friend: FriendUser;
+  status: string;
+  created_at: string;
+}
+
+export interface FriendListResponse {
+  friends: Friend[];
+  total: number;
+}
+

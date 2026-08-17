@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,13 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
+  TouchableOpacity,
 } from 'react-native';
 import { colors, radius, spacing, typography, shadows } from '../theme/colors';
 import { Header } from '../components/Header';
 import { WinCard } from '../components/WinCard';
 import { FeedLockedView } from '../components/FeedLockedView';
+import { FriendModal } from '../components/FriendModal';
 import { useWinStore } from '../stores/winStore';
 
 interface FeedScreenProps {
@@ -18,6 +20,7 @@ interface FeedScreenProps {
 }
 
 export const FeedScreen: React.FC<FeedScreenProps> = ({ onGoToPost }) => {
+  const [friendModalVisible, setFriendModalVisible] = useState(false);
   const {
     feedWins,
     feedLocked,
@@ -30,11 +33,32 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onGoToPost }) => {
     fetchFeed();
   }, []);
 
+  const handleFriendAdded = () => {
+    fetchFeed();
+  };
+
   if (feedLocked) {
     return (
       <View style={styles.container}>
-        <Header title="Bảng tin Bạn bè" subtitle="Không gian chia sẻ tích cực" />
+        <Header
+          title="Bảng tin Bạn bè"
+          subtitle="Không gian chia sẻ tích cực"
+          rightElement={
+            <TouchableOpacity
+              onPress={() => setFriendModalVisible(true)}
+              style={styles.friendBtn}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.friendBtnText}>👥 Bạn bè</Text>
+            </TouchableOpacity>
+          }
+        />
         <FeedLockedView onGoToPost={onGoToPost} />
+        <FriendModal
+          visible={friendModalVisible}
+          onClose={() => setFriendModalVisible(false)}
+          onFriendAdded={handleFriendAdded}
+        />
       </View>
     );
   }
@@ -45,6 +69,15 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onGoToPost }) => {
         title="Bảng tin Bạn bè"
         subtitle="Những chiến thắng nhỏ tích cực hôm nay ✨"
         badge={feedWins.length > 0 ? `${feedWins.length} tin` : undefined}
+        rightElement={
+          <TouchableOpacity
+            onPress={() => setFriendModalVisible(true)}
+            style={styles.friendBtn}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.friendBtnText}>👥 Bạn bè</Text>
+          </TouchableOpacity>
+        }
       />
 
       {isLoadingFeed && feedWins.length === 0 ? (
@@ -61,6 +94,13 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onGoToPost }) => {
             <Text style={[typography.body, styles.emptySubtitle]}>
               Bạn bè của bạn chưa đăng Tiny Win hôm nay hoặc bạn chưa kết nối thêm bạn mới.
             </Text>
+            <TouchableOpacity
+              style={styles.addFriendActionBtn}
+              onPress={() => setFriendModalVisible(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.addFriendActionText}>✨ Kết nối bạn bè ngay</Text>
+            </TouchableOpacity>
           </View>
         </View>
       ) : (
@@ -83,6 +123,12 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onGoToPost }) => {
           }
         />
       )}
+
+      <FriendModal
+        visible={friendModalVisible}
+        onClose={() => setFriendModalVisible(false)}
+        onFriendAdded={handleFriendAdded}
+      />
     </View>
   );
 };
@@ -126,4 +172,31 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     fontSize: 14,
   },
+  addFriendActionBtn: {
+    marginTop: spacing.lg,
+    backgroundColor: colors.accent,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: radius.md,
+    ...shadows.glowGreen,
+  },
+  addFriendActionText: {
+    ...typography.bodyBold,
+    color: colors.textInverse,
+    fontWeight: '700',
+  },
+  friendBtn: {
+    backgroundColor: colors.surfaceHighlight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+  },
+  friendBtnText: {
+    ...typography.captionBold,
+    color: colors.textPrimary,
+    fontSize: 12,
+  },
 });
+

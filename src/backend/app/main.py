@@ -9,7 +9,7 @@ from .config import settings
 from .database import Base, engine
 from . import models  # Register all models for metadata creation
 from .redis import close_redis, init_redis
-from .routers import auth, feed, reactions, streaks, wins
+from .routers import auth, feed, friends, reactions, streaks, wins
 
 
 @asynccontextmanager
@@ -49,6 +49,7 @@ app.include_router(wins.router)
 app.include_router(feed.router)
 app.include_router(reactions.router)
 app.include_router(streaks.router)
+app.include_router(friends.router)
 
 
 @app.get("/health")

@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { colors, radius, spacing, typography, shadows } from '../theme/colors';
 import { Header } from '../components/Header';
+import { FriendModal } from '../components/FriendModal';
 import { useAuthStore } from '../stores/authStore';
 import * as streaksApi from '../api/streaks';
 import { CalendarResponse, StreakResponse } from '../types';
@@ -20,6 +21,7 @@ export const ProfileScreen: React.FC = () => {
   const [streakData, setStreakData] = useState<StreakResponse | null>(null);
   const [calendarData, setCalendarData] = useState<CalendarResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [friendModalVisible, setFriendModalVisible] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -67,9 +69,18 @@ export const ProfileScreen: React.FC = () => {
         title="Hồ sơ cá nhân"
         subtitle="Hành trình duy trì thói quen tích cực"
         rightElement={
-          <TouchableOpacity onPress={logout} style={styles.logoutButton} activeOpacity={0.7}>
-            <Text style={styles.logoutText}>Đăng xuất</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
+            <TouchableOpacity
+              onPress={() => setFriendModalVisible(true)}
+              style={styles.qrHeaderBtn}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.qrHeaderBtnText}>🎫 Mã QR</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={logout} style={styles.logoutButton} activeOpacity={0.7}>
+              <Text style={styles.logoutText}>Đăng xuất</Text>
+            </TouchableOpacity>
+          </View>
         }
       />
 
@@ -88,7 +99,19 @@ export const ProfileScreen: React.FC = () => {
               <Text style={styles.timezoneText}>🌐 {user?.timezone || 'UTC'}</Text>
             </View>
           </View>
+          <TouchableOpacity
+            style={styles.friendActionBtn}
+            onPress={() => setFriendModalVisible(true)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.friendActionText}>👥 Bạn bè</Text>
+          </TouchableOpacity>
         </View>
+
+        <FriendModal
+          visible={friendModalVisible}
+          onClose={() => setFriendModalVisible(false)}
+        />
 
         {isLoading ? (
           <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.xl }} />
@@ -372,4 +395,31 @@ const styles = StyleSheet.create({
     color: '#000',
     fontWeight: '800',
   },
+  qrHeaderBtn: {
+    backgroundColor: colors.surfaceHighlight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+  },
+  qrHeaderBtnText: {
+    ...typography.captionBold,
+    color: colors.accentLight,
+    fontSize: 12,
+  },
+  friendActionBtn: {
+    backgroundColor: colors.surfaceHighlight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+  },
+  friendActionText: {
+    ...typography.captionBold,
+    color: colors.textPrimary,
+    fontSize: 12,
+  },
 });
+

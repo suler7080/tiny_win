@@ -3,6 +3,7 @@ import { ReactionType, TodayWinStatus, Win } from '../types';
 import * as winsApi from '../api/wins';
 import * as feedApi from '../api/feed';
 import * as reactionsApi from '../api/reactions';
+import { extractErrorMessage } from '../api/client';
 
 interface WinState {
   todayStatus: TodayWinStatus | null;
@@ -59,7 +60,7 @@ export const useWinStore = create<WinState>((set, get) => ({
       get().fetchFeed();
       return newWin;
     } catch (err: any) {
-      const msg = err.response?.data?.error?.message || 'Không thể đăng Tiny Win lúc này';
+      const msg = extractErrorMessage(err);
       set({ error: msg, isPosting: false });
       throw new Error(msg);
     }

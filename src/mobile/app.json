@@ -25,6 +25,11 @@
         "INTERNET"
       ]
     },
-    "plugins": []
+    "plugins": [],
+    "extra": {
+      "eas": {
+        "projectId": "9404f56d-8b2f-41ed-8811-3efe52c1a840"
+      }
+    }
   }
 }
